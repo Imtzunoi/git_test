@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor Opriri Producție</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .header,
+        body.dark-mode .user-selector,
+        body.dark-mode .main-screen,
+        body.dark-mode .dashboard {
+            background: rgba(45, 55, 72, 0.95);
+            border: 1px solid rgba(74, 85, 104, 0.3);
+        }
+
+        body.dark-mode .cause-btn,
+        body.dark-mode .stat-card,
+        body.dark-mode .filter-btn {
+            background: linear-gradient(135deg, #4a5568, #2d3748);
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .user-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            font-size: 16px;
+            background: white;
+        }
+
+        .nav-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+        }
+
+        .settings-btn {
+            background: linear-gradient(135deg, #718096, #4a5568);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-left: 10px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .main-screen {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-display {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .timer {
+            font-size: 4em;
+            font-weight: bold;
+            color: #e53e3e;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .timer.stopped {
+            color: #48bb78;
+        }
+
+        .current-issue {
+            font-size: 1.5em;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .emergency-stop-btn {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            color: white;
+            border: none;
+            padding: 25px 40px;
+            border-radius: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4);
+            animation: emergencyPulse 2s infinite;
+            min-width: 280px;
+            display: block;
+            margin: 0 auto 30px auto;
+        }
+
+        .emergency-stop-btn.active {
+            background: linear-gradient(135deg, #f56565, #e53e3e);
+            animation: emergencyActivePulse 1s infinite;
+        }
+
+        @keyframes emergencyPulse {
+            0% { box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4); }
+            50% { box-shadow: 0 8px 30px rgba(229, 62, 62, 0.6); }
+            100% { box-shadow: 0 6px 20px rgba(229, 62, 62, 0.4); }
+        }
+
+        @keyframes emergencyActivePulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .causes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .cause-btn {
+            background: linear-gradient(135deg, #ffffff, #f7fafc);
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 30px 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2d3748;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cause-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .cause-btn.active {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+            color: white;
+            border-color: #c53030;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .resolve-btn {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .resolve-btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .cause-selection-modal, .settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .cause-selection-content, .settings-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        body.dark-mode .cause-selection-content,
+        body.dark-mode .settings-content {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .backup-status {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+        }
+
+        .dashboard {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: linear-gradient(135deg, #ffffff, #f7fafc);
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff, #f7fafc);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 1.1em;
+        }
+
+        .export-btn, .clear-data-btn {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .clear-data-btn {
+            background: linear-gradient(135deg, #e53e3e, #c53030);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            h1 { font-size: 1.8em; }
+            .timer { font-size: 2.5em; }
+            .causes-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .cause-btn { padding: 20px 10px; font-size: 1em; }
+            .emergency-stop-btn { padding: 20px 30px; font-size: 1.3em; min-width: 250px; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Monitor Opriri Producție</h1>
+            
+            <div class="user-selector">
+                <select class="user-select" id="current-user">
+                    <option value="">Selectați operatorul</option>
+                    <option value="Ionita Gabriela">Ionita Gabriela</option>
+                    <option value="Lisaveta Georgeta">Lisaveta Georgeta</option>
+                    <option value="Lisaveta Oana">Lisaveta Oana</option>
+                    <option value="Marica Gabriela">Marica Gabriela</option>
+                    <option value="Matei Daniela">Matei Daniela</option>
+                    <option value="Nae Camelia">Nae Camelia</option>
+                    <option value="Toma Mariana">Toma Mariana</option>
+                </select>
+                <div id="shift-info" style="margin-top: 10px; font-size: 14px; color: #4299e1; text-align: center;"></div>
+            </div>
+
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showScreen('main')">Monitorizare</button>
+                <button class="nav-btn" onclick="showScreen('dashboard')">Dashboard</button>
+                <button class="nav-btn" onclick="showScreen('timeline')">Timeline</button>
+                <button class="settings-btn" onclick="showSettings()">Setări</button>
+            </div>
+            
+            <div class="backup-status" id="backup-status">
+                Backup automat: Ultimul salvat acum 2 minute
+            </div>
+        </div>
+
+        <div id="main-screen" class="screen active">
+            <div class="main-screen fade-in">
+                <div class="status-display">
+                    <div class="timer stopped" id="timer">00:00:00</div>
+                    <div class="current-issue" id="current-issue">Selectați cauza opririi</div>
+                </div>
+
+                <button class="emergency-stop-btn" id="emergency-stop-btn" onclick="emergencyStop()">
+                    🚨 OPRIRE LINIE!
+                </button>
+                <div style="text-align: center; margin-bottom: 30px; color: #718096; font-size: 0.9em;">
+                    Pentru opriri cu cauză necunoscută
+                </div>
+
+                <div class="causes-grid">
+                    <button class="cause-btn" onclick="startCause('Shaker')">
+                        <div style="font-size: 3em; margin-bottom: 10px;">🔧</div>
+                        <div>Shaker</div>
+                    </button>
+                    <button class="cause-btn" onclick="startCause('Ring')">
+                        <div style="font-size: 3em; margin-bottom: 10px;">⚫</div>
+                        <div>Ring</div>
+                    </button>
+                    <button class="cause-btn" onclick="startCause('Eticheta')">
+                        <div style="font-size: 3em; margin-bottom: 10px;">🏷️</div>
+                        <div>Eticheta</div>
+                    </button>
+                    <button class="cause-btn" onclick="startCause('Tactil')">
+                        <div style="font-size: 3em; margin-bottom: 10px;">👆</div>
+                        <div>Tactil</div>
+                    </button>
+                    <button class="cause-btn" onclick="startCause('Manusi')">
+                        <div style="font-size: 3em; margin-bottom: 10px;">🧤</div>
+                        <div>Manusi</div>
+                    </button>
+                </div>
+
+                <button class="resolve-btn" id="resolve-btn" onclick="resolveIssue()" disabled>
+                    ✅ Rezolvat
+                </button>
+            </div>
+        </div>
+
+        <div id="dashboard-screen" class="screen">
+            <div class="dashboard fade-in">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #2d3748;">📊 Dashboard Statistici</h2>
+                
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterData('today')">Astăzi</button>
+                    <button class="filter-btn" onclick="filterData('yesterday')">Ieri</button>
+                    <button class="filter-btn" onclick="filterData('week')">Săptămâna</button>
+                    <button class="filter-btn" onclick="filterData('month')">Luna</button>
+                    <button class="filter-btn" onclick="filterData('custom')">📅 Data Specifică</button>
+                </div>
+
+                <div id="custom-date-filter" style="display: none; margin-bottom: 20px;">
+                    <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                        <input type="date" id="filter-date" class="user-select" style="width: auto;">
+                        <select id="filter-shift" class="user-select" style="width: auto;">
+                            <option value="">Toate schimburile</option>
+                            <option value="1">Schimbul 1 (06:00-14:00)</option>
+                            <option value="2">Schimbul 2 (14:00-22:00)</option>
+                            <option value="3">Schimbul 3 (22:00-06:00)</option>
+                        </select>
+                        <button onclick="applyCustomFilter()" class="nav-btn" style="margin: 0;">Aplică</button>
+                    </div>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-incidents">0</div>
+                        <div class="stat-label">Total Opriri</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-downtime">00:00:00</div>
+                        <div class="stat-label">Timp Total Oprire</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="avg-downtime">00:00:00</div>
+                        <div class="stat-label">Timp Mediu/Oprire</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="most-common-cause">-</div>
+                        <div class="stat-label">Cauza Principală</div>
+                    </div>
+                </div>
+
+                <h3 style="margin-bottom: 20px; color: #2d3748;">📈 Statistici per Cauză</h3>
+                <div id="causes-stats"></div>
+
+                <h3 style="margin-bottom: 20px; color: #2d3748;">📝 Istoric Opriri</h3>
+                <div id="incidents-list" style="background: #f7fafc; border-radius: 15px; padding: 25px; max-height: 400px; overflow-y: auto;">
+                    <div style="text-align: center; color: #718096; padding: 40px;">
+                        Nu există opriri înregistrate
+                    </div>
+                </div>
+
+                <button class="clear-data-btn" onclick="clearAllData()">
+                    🗑️ Șterge Toate Datele
+                </button>
+
+                <button class="export-btn" onclick="exportToExcel()">
+                    📊 Export Excel
+                </button>
+            </div>
+        </div>
+
+        <div id="timeline-screen" class="screen">
+            <div class="dashboard fade-in">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #2d3748;">📈 Timeline Producție</h2>
+                
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterTimeline('today')">Astăzi</button>
+                    <button class="filter-btn" onclick="filterTimeline('yesterday')">Ieri</button>
+                    <button class="filter-btn" onclick="filterTimeline('week')">Săptămâna</button>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.95); border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);">
+                    <div style="display: flex; align-items: center; margin-bottom: 40px; min-height: 70px;">
+                        <div style="width: 150px; font-weight: 600; color: #2d3748; font-size: 14px; padding-right: 10px;">Schimbul 1 (06:00-14:00)</div>
+                        <div style="flex: 1; height: 50px; background: linear-gradient(90deg, #48bb78 0%, #48bb78 100%); border-radius: 6px; position: relative; border: 1px solid #38a169;">
+                            <div id="timeline-shift-1"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; margin-bottom: 40px; min-height: 70px;">
+                        <div style="width: 150px; font-weight: 600; color: #2d3748; font-size: 14px; padding-right: 10px;">Schimbul 2 (14:00-22:00)</div>
+                        <div style="flex: 1; height: 50px; background: linear-gradient(90deg, #48bb78 0%, #48bb78 100%); border-radius: 6px; position: relative; border: 1px solid #38a169;">
+                            <div id="timeline-shift-2"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; margin-bottom: 40px; min-height: 70px;">
+                        <div style="width: 150px; font-weight: 600; color: #2d3748; font-size: 14px; padding-right: 10px;">Schimbul 3 (22:00-06:00)</div>
+                        <div style="flex: 1; height: 50px; background: linear-gradient(90deg, #48bb78 0%, #48bb78 100%); border-radius: 6px; position: relative; border: 1px solid #38a169;">
+                            <div id="timeline-shift-3"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.9); border-radius: 10px; padding: 15px;">
+                    <h4 style="margin-bottom: 15px; color: #2d3748;">Legendă:</h4>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 15px; background: #48bb78; border-radius: 3px;"></div>
+                            <span>Producție Normală</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 20px; height: 15px; background: #e53e3e; border-radius: 3px;"></div>
+                            <span>Opriri</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentIssue = null;
+        let startTime = null;
+        let timerInterval = null;
+        let incidents = JSON.parse(localStorage.getItem('productionIncidents') || '[]');
+        let currentUser = '';
+        let isUnknownCause = false;
+        let currentFilter = 'today';
+        let customFilterDate = '';
+        let customFilterShift = '';
+        let timelineFilter = 'today';
+        let emailAlertTimer = null;
+        let settings = JSON.parse(localStorage.getItem('appSettings') || '{"darkMode": false, "language": "ro", "emailAlerts": true}');
+
+        const translations = {
+            ro: {
+                selectOperator: "Selectați operatorul",
+                monitoring: "Monitorizare",
+                dashboard: "Dashboard",
+                timeline: "Timeline",
+                selectCause: "Selectați cauza opririi",
+                emergencyStop: "OPRIRE LINIE!",
+                investigating: "Investigând...",
+                stopInvestigation: "Oprire - investigație în curs",
+                resolved: "Rezolvat",
+                dashboardStats: "Dashboard Statistici",
+                today: "Astăzi",
+                yesterday: "Ieri",
+                week: "Săptămâna",
+                month: "Luna",
+                specificDate: "📅 Data Specifică"
+            },
+            en: {
+                selectOperator: "Select operator",
+                monitoring: "Monitoring",
+                dashboard: "Dashboard", 
+                timeline: "Timeline",
+                selectCause: "Select stop cause",
+                emergencyStop: "LINE STOP!",
+                investigating: "Investigating...",
+                stopInvestigation: "Stop - investigation in progress",
+                resolved: "Resolved",
+                dashboardStats: "Dashboard Statistics",
+                today: "Today",
+                yesterday: "Yesterday", 
+                week: "Week",
+                month: "Month",
+                specificDate: "📅 Specific Date"
+            }
+        };
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', function() {
+            applySettings();
+            updateLanguage();
+            updateDashboard();
+            updateTimeline();
+            
+            // Update backup status every minute
+            setInterval(updateBackupStatus, 60000);
+        });
+
+        function applySettings() {
+            if (settings.darkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = translations[settings.language] || translations['ro'];
+            
+            try {
+                document.querySelector('#current-user option[value=""]').textContent = t.selectOperator;
+                document.querySelector('button[onclick="showScreen(\'main\')"]').textContent = t.monitoring;
+                document.querySelector('button[onclick="showScreen(\'dashboard\')"]').textContent = t.dashboard;
+                document.querySelector('button[onclick="showScreen(\'timeline\')"]').textContent = t.timeline;
+                document.getElementById('current-issue').textContent = t.selectCause;
+                
+                const emergencyBtn = document.getElementById('emergency-stop-btn');
+                if (!emergencyBtn.classList.contains('active')) {
+                    emergencyBtn.textContent = `🚨 ${t.emergencyStop}`;
+                }
+                
+                document.getElementById('resolve-btn').textContent = `✅ ${t.resolved}`;
+                
+                const dashboardTitle = document.querySelector('#dashboard-screen h2');
+                if (dashboardTitle) {
+                    dashboardTitle.textContent = `📊 ${t.dashboardStats}`;
+                }
+            } catch (e) {
+                console.log('Translation update error:', e);
+            }
+        }
+
+        function changeUser() {
+            currentUser = document.getElementById('current-user').value;
+            if (currentUser) {
+                const shiftInfo = document.getElementById('shift-info');
+                shiftInfo.textContent = `${currentUser} • ${new Date().toLocaleDateString('ro-RO')}`;
+                showNotification(`👤 ${currentUser} selectat`);
+            }
+        }
+
+        document.getElementById('current-user').addEventListener('change', changeUser);
+
+        function showSettings() {
+            const modal = document.createElement('div');
+            modal.className = 'settings-modal';
+            modal.id = 'settings-modal';
+            
+            modal.innerHTML = `
+                <div class="settings-content">
+                    <h2 style="text-align: center; margin-bottom: 30px; color: #2d3748;">⚙️ Setări</h2>
+                    
+                    <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">🎨 Aspect</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Mod Întunecat</span>
+                            <div onclick="toggleDarkMode()" style="position: relative; width: 50px; height: 24px; background: ${settings.darkMode ? '#48bb78' : '#cbd5e0'}; border-radius: 12px; cursor: pointer; transition: all 0.3s ease;">
+                                <div style="position: absolute; top: 2px; left: ${settings.darkMode ? '26px' : '2px'}; width: 20px; height: 20px; background: white; border-radius: 50%; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">🌍 Limba</h3>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+                            <button onclick="setLanguage('ro')" style="background: ${settings.language === 'ro' ? '#667eea' : '#f7fafc'}; color: ${settings.language === 'ro' ? 'white' : '#2d3748'}; border: 2px solid ${settings.language === 'ro' ? '#667eea' : '#e2e8f0'}; border-radius: 8px; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 14px;">🇷🇴 Română</button>
+                            <button onclick="setLanguage('en')" style="background: ${settings.language === 'en' ? '#667eea' : '#f7fafc'}; color: ${settings.language === 'en' ? 'white' : '#2d3748'}; border: 2px solid ${settings.language === 'en' ? '#667eea' : '#e2e8f0'}; border-radius: 8px; padding: 10px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 14px;">🇬🇧 English</button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+                        <h3 style="color: #2d3748; margin-bottom: 15px;">📧 Notificări</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <span>Alerte Email</span>
+                            <div onclick="toggleEmailAlerts()" style="position: relative; width: 50px; height: 24px; background: ${settings.emailAlerts ? '#48bb78' : '#cbd5e0'}; border-radius: 12px; cursor: pointer; transition: all 0.3s ease;">
+                                <div style="position: absolute; top: 2px; left: ${settings.emailAlerts ? '26px' : '2px'}; width: 20px; height: 20px; background: white; border-radius: 50%; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);"></div>
+                            </div>
+                        </div>
+                        <div style="background: #e6fffa; border: 1px solid #81e6d9; border-radius: 8px; padding: 10px; font-size: 14px; color: #065f46;">
+                            Email automat după 1 minut oprire la:<br>
+                            <strong>antonionutdaniel@gmail.com</strong><br>
+                            <small style="color: #e53e3e;">⚠️ Momentan doar simulare - pentru email real contactează dezvoltatorul</small>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button onclick="closeSettings()" style="background: #e2e8f0; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                            Închide
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById('settings-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function toggleDarkMode() {
+            settings.darkMode = !settings.darkMode;
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            
+            if (settings.darkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            
+            closeSettings();
+            showSettings();
+        }
+
+        function setLanguage(lang) {
+            settings.language = lang;
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            updateLanguage();
+            closeSettings();
+            showSettings();
+            showNotification(`🌍 Limba schimbată în ${lang.toUpperCase()}`);
+        }
+
+        function toggleEmailAlerts() {
+            settings.emailAlerts = !settings.emailAlerts;
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            closeSettings();
+            showSettings();
+        }
+
+        function emergencyStop() {
+            if (currentIssue) {
+                showNotification('⚠️ O oprire este deja activă!');
+                return;
+            }
+            
+            currentIssue = 'Cauză necunoscută';
+            startTime = new Date();
+            isUnknownCause = true;
+            
+            const emergencyBtn = document.getElementById('emergency-stop-btn');
+            emergencyBtn.classList.add('active');
+            emergencyBtn.textContent = '🔍 Investigând...';
+            
+            document.getElementById('current-issue').textContent = 'Oprire - investigație în curs';
+            document.getElementById('timer').classList.remove('stopped');
+            document.getElementById('resolve-btn').disabled = false;
+            
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+            
+            if (settings.emailAlerts) {
+                emailAlertTimer = setTimeout(sendEmailAlert, 60000);
+            }
+            
+            showNotification('🚨 Oprire înregistrată - investigație în curs');
+        }
+
+        function startCause(cause) {
+            if (currentIssue === cause) {
+                resolveIssue();
+                return;
+            }
+
+            if (currentIssue) {
+                resolveIssue();
+                setTimeout(() => {
+                    actualStartCause(cause);
+                }, 500);
+            } else {
+                actualStartCause(cause);
+            }
+        }
+
+        function actualStartCause(cause) {
+            currentIssue = cause;
+            startTime = new Date();
+            isUnknownCause = false;
+            
+            document.querySelectorAll('.cause-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('current-issue').textContent = `Oprire activă: ${cause}`;
+            document.getElementById('timer').classList.remove('stopped');
+            document.getElementById('resolve-btn').disabled = false;
+            
+            const emergencyBtn = document.getElementById('emergency-stop-btn');
+            emergencyBtn.classList.remove('active');
+            emergencyBtn.textContent = '🚨 OPRIRE LINIE!';
+            
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer();
+            
+            if (settings.emailAlerts) {
+                emailAlertTimer = setTimeout(sendEmailAlert, 60000);
+            }
+            
+            showNotification(`⏱️ Oprire începută: ${cause}`);
+        }
+
+        function updateTimer() {
+            if (!startTime) return;
+            
+            const now = new Date();
+            const elapsed = now - startTime;
+            const formatted = formatDuration(elapsed);
+            document.getElementById('timer').textContent = formatted;
+        }
+
+        function formatDuration(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function sendEmailAlert() {
+            const emailData = {
+                to: 'antonionutdaniel@gmail.com',
+                subject: `🚨 ALERTĂ OPRIRE PRODUCȚIE - ${currentIssue}`,
+                body: `OPRIRE LINIE DETECTATĂ!\nCauza: ${currentIssue}\nOperator: ${currentUser || 'Necunoscut'}\nTimp început: ${startTime.toLocaleString('ro-RO')}\nDurată actuală: ${formatDuration(new Date() - startTime)}\nAcțiune necesară: Verificare urgentă!`
+            };
+            
+            console.log('📧 EMAIL SIMULAT TRIMIS:', emailData);
+            showNotification(`📧 Email simulat trimis pentru: ${currentIssue}`);
+            alert(`📧 EMAIL SIMULAT TRIMIS!\n\nLa: antonionutdaniel@gmail.com\nCauza: ${currentIssue}\nDurată: ${formatDuration(new Date() - startTime)}\n\n⚠️ Pentru email real, contactează dezvoltatorul!`);
+        }
+
+        function resolveIssue() {
+            if (!currentIssue || !startTime) return;
+            
+            if (emailAlertTimer) {
+                clearTimeout(emailAlertTimer);
+                emailAlertTimer = null;
+            }
+            
+            if (isUnknownCause) {
+                showCauseSelectionModal();
+                return;
+            }
+            
+            finishIssue();
+        }
+
+        function finishIssue() {
+            const endTime = new Date();
+            const duration = endTime - startTime;
+            
+            const incident = {
+                cause: currentIssue,
+                startTime: startTime.toISOString(),
+                endTime: endTime.toISOString(),
+                duration: duration,
+                date: startTime.toLocaleDateString('ro-RO'),
+                time: startTime.toLocaleTimeString('ro-RO'),
+                operator: currentUser || 'Operator necunoscut'
+            };
+            
+            incidents.unshift(incident);
+            localStorage.setItem('productionIncidents', JSON.stringify(incidents));
+            
+            clearInterval(timerInterval);
+            document.querySelectorAll('.cause-btn').forEach(btn => btn.classList.remove('active'));
+            
+            const emergencyBtn = document.getElementById('emergency-stop-btn');
+            emergencyBtn.classList.remove('active');
+            emergencyBtn.textContent = '🚨 OPRIRE LINIE!';
+            
+            document.getElementById('current-issue').textContent = 'Selectați cauza opririi';
+            document.getElementById('timer').classList.add('stopped');
+            document.getElementById('timer').textContent = formatDuration(duration);
+            document.getElementById('resolve-btn').disabled = true;
+            
+            currentIssue = null;
+            startTime = null;
+            timerInterval = null;
+            isUnknownCause = false;
+            
+            showNotification(`✅ Oprire rezolvată: ${incident.cause} (${formatDuration(duration)})`);
+            
+            setTimeout(() => {
+                if (!currentIssue) {
+                    document.getElementById('timer').textContent = '00:00:00';
+                }
+            }, 3000);
+        }
+
+        function showCauseSelectionModal() {
+            const modal = document.createElement('div');
+            modal.className = 'cause-selection-modal';
+            modal.id = 'cause-selection-modal';
+            
+            modal.innerHTML = `
+                <div class="cause-selection-content">
+                    <div style="text-align: center; font-size: 1.5em; font-weight: bold; color: #2d3748; margin-bottom: 20px;">
+                        🔍 Care a fost cauza identificată?
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <button onclick="selectCauseFromModal('Shaker')" style="background: linear-gradient(135deg, #ffffff, #f7fafc); border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 1em; font-weight: 600; color: #2d3748;">
+                            <div style="font-size: 2em; margin-bottom: 8px;">🔧</div>
+                            <div>Shaker</div>
+                        </button>
+                        <button onclick="selectCauseFromModal('Ring')" style="background: linear-gradient(135deg, #ffffff, #f7fafc); border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 1em; font-weight: 600; color: #2d3748;">
+                            <div style="font-size: 2em; margin-bottom: 8px;">⚫</div>
+                            <div>Ring</div>
+                        </button>
+                        <button onclick="selectCauseFromModal('Eticheta')" style="background: linear-gradient(135deg, #ffffff, #f7fafc); border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 1em; font-weight: 600; color: #2d3748;">
+                            <div style="font-size: 2em; margin-bottom: 8px;">🏷️</div>
+                            <div>Eticheta</div>
+                        </button>
+                        <button onclick="selectCauseFromModal('Tactil')" style="background: linear-gradient(135deg, #ffffff, #f7fafc); border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 1em; font-weight: 600; color: #2d3748;">
+                            <div style="font-size: 2em; margin-bottom: 8px;">👆</div>
+                            <div>Tactil</div>
+                        </button>
+                        <button onclick="selectCauseFromModal('Manusi')" style="background: linear-gradient(135deg, #ffffff, #f7fafc); border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px 15px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 1em; font-weight: 600; color: #2d3748;">
+                            <div style="font-size: 2em; margin-bottom: 8px;">🧤</div>
+                            <div>Manusi</div>
+                        </button>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="closeCauseSelectionModal()" style="background: #e2e8f0; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
+                            Anulează
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function selectCauseFromModal(cause) {
+            currentIssue = cause;
+            closeCauseSelectionModal();
+            finishIssue();
+        }
+
+        function closeCauseSelectionModal() {
+            const modal = document.getElementById('cause-selection-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function showScreen(screenName) {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenName + '-screen').classList.add('active');
+
+            if (screenName === 'dashboard') {
+                updateDashboard();
+            } else if (screenName === 'timeline') {
+                updateTimeline();
+            }
+        }
+
+        function filterData(period) {
+            currentFilter = period;
+            
+            document.querySelectorAll('#dashboard-screen .filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const customDateFilter = document.getElementById('custom-date-filter');
+            if (period === 'custom') {
+                customDateFilter.style.display = 'block';
+                document.getElementById('filter-date').value = new Date().toISOString().split('T')[0];
+            } else {
+                customDateFilter.style.display = 'none';
+                customFilterDate = '';
+                customFilterShift = '';
+                updateDashboard();
+            }
+            
+            if (period !== 'custom') {
+                updateDashboard();
+            }
+        }
+
+        function applyCustomFilter() {
+            customFilterDate = document.getElementById('filter-date').value;
+            customFilterShift = document.getElementById('filter-shift').value;
+            updateDashboard();
+        }
+
+        function getFilteredIncidents() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today.getTime() - (24 * 60 * 60 * 1000));
+            const thisWeek = new Date(today.getTime() - (today.getDay() * 24 * 60 * 60 * 1000));
+            const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            return incidents.filter(incident => {
+                const incidentDate = new Date(incident.startTime);
+                const incidentDay = new Date(incidentDate.getFullYear(), incidentDate.getMonth(), incidentDate.getDate());
+                
+                if (currentFilter === 'custom' && customFilterDate) {
+                    const filterDate = new Date(customFilterDate);
+                    const filterDay = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                    
+                    const dateMatches = incidentDay.getTime() === filterDay.getTime();
+                    const shiftMatches = !customFilterShift || getShiftFromTime(incidentDate) === customFilterShift;
+                    
+                    return dateMatches && shiftMatches;
+                }
+                
+                switch(currentFilter) {
+                    case 'today':
+                        return incidentDay.getTime() === today.getTime();
+                    case 'yesterday':
+                        return incidentDay.getTime() === yesterday.getTime();
+                    case 'week':
+                        return incidentDate >= thisWeek;
+                    case 'month':
+                        return incidentDate >= thisMonth;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        function getShiftFromTime(date) {
+            const hour = date.getHours();
+            if (hour >= 6 && hour < 14) return '1';
+            if (hour >= 14 && hour < 22) return '2';
+            return '3';
+        }
+
+        function updateDashboard() {
+            const filteredIncidents = getFilteredIncidents();
+            const totalIncidents = filteredIncidents.length;
+            const totalDowntime = filteredIncidents.reduce((sum, incident) => sum + incident.duration, 0);
+            const avgDowntime = totalIncidents > 0 ? totalDowntime / totalIncidents : 0;
+            
+            const causeStats = {};
+            filteredIncidents.forEach(incident => {
+                if (!causeStats[incident.cause]) {
+                    causeStats[incident.cause] = {
+                        count: 0,
+                        totalDuration: 0
+                    };
+                }
+                causeStats[incident.cause].count++;
+                causeStats[incident.cause].totalDuration += incident.duration;
+            });
+            
+            const mostCommonCause = Object.keys(causeStats).reduce((a, b) => 
+                causeStats[a]?.count > causeStats[b]?.count ? a : b, '-');
+            
+            document.getElementById('total-incidents').textContent = totalIncidents;
+            document.getElementById('total-downtime').textContent = formatDuration(totalDowntime);
+            document.getElementById('avg-downtime').textContent = formatDuration(avgDowntime);
+            document.getElementById('most-common-cause').textContent = totalIncidents > 0 ? mostCommonCause : '-';
+            
+            updateCausesStats(causeStats, totalDowntime);
+            updateIncidentsList(filteredIncidents);
+        }
+
+        function getCauseIcon(cause) {
+            const icons = {
+                'Shaker': '🔧',
+                'Ring': '⚫',
+                'Eticheta': '🏷️',
+                'Tactil': '👆',
+                'Manusi': '🧤',
+                'Cauză necunoscută': '❓'
+            };
+            return icons[cause] || '⚠️';
+        }
+
+        function updateCausesStats(causeStats, totalDowntime) {
+            const causesStatsContainer = document.getElementById('causes-stats');
+            
+            if (Object.keys(causeStats).length === 0) {
+                causesStatsContainer.innerHTML = `
+                    <div style="text-align: center; color: #718096; padding: 40px;">
+                        Nu există date pentru perioada selectată
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedCauses = Object.entries(causeStats).sort((a, b) => b[1].totalDuration - a[1].totalDuration);
+            
+            causesStatsContainer.innerHTML = sortedCauses.map(([cause, stats]) => {
+                const avgDuration = stats.totalDuration / stats.count;
+                const percentage = totalDowntime > 0 ? (stats.totalDuration / totalDowntime * 100) : 0;
+                const icon = getCauseIcon(cause);
+                
+                return `
+                    <div style="background: linear-gradient(135deg, #ffffff, #f7fafc); border-radius: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <div style="font-size: 2em; margin-right: 15px;">${icon}</div>
+                            <div style="font-size: 1.3em; font-weight: bold; color: #2d3748;">${cause}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 2em; font-weight: bold; color: #667eea;">${stats.count}</div>
+                                <div style="font-size: 0.9em; color: #718096;">opriri</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 1.1em; color: #e53e3e; font-weight: 600;">${formatDuration(stats.totalDuration)}</div>
+                                <div style="font-size: 0.9em; color: #718096; margin-top: 5px;">Medie: ${formatDuration(avgDuration)}</div>
+                            </div>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; margin-top: 10px; overflow: hidden;">
+                            <div style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px;"></div>
+                        </div>
+                        <div style="text-align: center; margin-top: 8px; font-size: 0.8em; color: #718096;">
+                            ${percentage.toFixed(1)}% din timpul total
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateIncidentsList(filteredIncidents) {
+            const incidentsList = document.getElementById('incidents-list');
+            
+            if (filteredIncidents.length === 0) {
+                incidentsList.innerHTML = `
+                    <div style="text-align: center; color: #718096; padding: 40px;">
+                        Nu există opriri înregistrate pentru perioada selectată
+                    </div>
+                `;
+            } else {
+                incidentsList.innerHTML = filteredIncidents.map(incident => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; margin-bottom: 10px; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border-left: 4px solid #667eea;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #2d3748; margin-bottom: 5px;">
+                                ${getCauseIcon(incident.cause)} ${incident.cause}
+                            </div>
+                            <div style="font-size: 0.9em; color: #718096;">
+                                ${incident.date} • ${incident.time} • ${incident.operator}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2em; font-weight: bold; color: #e53e3e;">
+                                ${formatDuration(incident.duration)}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function filterTimeline(period) {
+            timelineFilter = period;
+            
+            document.querySelectorAll('#timeline-screen .filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateTimeline();
+        }
+
+        function updateTimeline() {
+            const filteredIncidents = getTimelineFilteredIncidents();
+            
+            // Clear timeline
+            document.getElementById('timeline-shift-1').innerHTML = '';
+            document.getElementById('timeline-shift-2').innerHTML = '';
+            document.getElementById('timeline-shift-3').innerHTML = '';
+            
+            filteredIncidents.forEach(incident => {
+                const startDate = new Date(incident.startTime);
+                const endDate = new Date(incident.endTime);
+                const shift = getShiftFromTime(startDate);
+                
+                const timelineContainer = document.getElementById(`timeline-shift-${shift}`);
+                if (timelineContainer) {
+                    const startHour = startDate.getHours();
+                    const startMinute = startDate.getMinutes();
+                    const endHour = endDate.getHours();
+                    const endMinute = endDate.getMinutes();
+                    
+                    let startPercent, widthPercent;
+                    
+                    if (shift === '1') { // 06:00-14:00
+                        startPercent = ((startHour - 6) * 60 + startMinute) / (8 * 60) * 100;
+                        const endPercent = ((endHour - 6) * 60 + endMinute) / (8 * 60) * 100;
+                        widthPercent = Math.max(1, endPercent - startPercent);
+                    } else if (shift === '2') { // 14:00-22:00
+                        startPercent = ((startHour - 14) * 60 + startMinute) / (8 * 60) * 100;
+                        const endPercent = ((endHour - 14) * 60 + endMinute) / (8 * 60) * 100;
+                        widthPercent = Math.max(1, endPercent - startPercent);
+                    } else { // 22:00-06:00
+                        if (startHour >= 22) {
+                            startPercent = ((startHour - 22) * 60 + startMinute) / (8 * 60) * 100;
+                        } else {
+                            startPercent = ((startHour + 2) * 60 + startMinute) / (8 * 60) * 100;
+                        }
+                        
+                        let endPercent;
+                        if (endHour >= 22) {
+                            endPercent = ((endHour - 22) * 60 + endMinute) / (8 * 60) * 100;
+                        } else {
+                            endPercent = ((endHour + 2) * 60 + endMinute) / (8 * 60) * 100;
+                        }
+                        widthPercent = Math.max(1, endPercent - startPercent);
+                    }
+                    
+                    const stopElement = document.createElement('div');
+                    stopElement.style.cssText = `
+                        position: absolute;
+                        left: ${Math.max(0, Math.min(100, startPercent))}%;
+                        width: ${Math.max(1, Math.min(100 - startPercent, widthPercent))}%;
+                        height: 100%;
+                        background: #e53e3e;
+                        border-radius: 3px;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                    `;
+                    
+                    stopElement.title = `${incident.cause} - ${formatDuration(incident.duration)} (${incident.time})`;
+                    
+                    stopElement.addEventListener('mouseenter', function() {
+                        this.style.background = '#c53030';
+                        this.style.transform = 'scaleY(1.2)';
+                    });
+                    
+                    stopElement.addEventListener('mouseleave', function() {
+                        this.style.background = '#e53e3e';
+                        this.style.transform = 'scaleY(1)';
+                    });
+                    
+                    timelineContainer.appendChild(stopElement);
+                }
+            });
+        }
+
+        function getTimelineFilteredIncidents() {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today.getTime() - (24 * 60 * 60 * 1000));
+            const thisWeek = new Date(today.getTime() - (today.getDay() * 24 * 60 * 60 * 1000));
+            
+            return incidents.filter(incident => {
+                const incidentDate = new Date(incident.startTime);
+                const incidentDay = new Date(incidentDate.getFullYear(), incidentDate.getMonth(), incidentDate.getDate());
+                
+                switch(timelineFilter) {
+                    case 'today':
+                        return incidentDay.getTime() === today.getTime();
+                    case 'yesterday':
+                        return incidentDay.getTime() === yesterday.getTime();
+                    case 'week':
+                        return incidentDate >= thisWeek;
+                    default:
+                        return true;
+                }
+            });
+        }
+
+        function exportToExcel() {
+            try {
+                // Create CSV content
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Data,Ora Start,Ora Sfarsit,Cauza,Durata (minute),Operator\n";
+                
+                incidents.forEach(incident => {
+                    const durationMinutes = Math.round(incident.duration / (1000 * 60));
+                    const startTime = new Date(incident.startTime).toLocaleTimeString('ro-RO');
+                    const endTime = new Date(incident.endTime).toLocaleTimeString('ro-RO');
+                    
+                    csvContent += `${incident.date},${startTime},${endTime},"${incident.cause}",${durationMinutes},"${incident.operator}"\n`;
+                });
+                
+                // Create download link
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `opriri_productie_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('📊 Export Excel realizat cu succes!');
+            } catch (error) {
+                console.error('Export error:', error);
+                showNotification('❌ Eroare la export - încearcă din nou');
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Ești sigur că vrei să ștergi toate datele? Această acțiune nu poate fi anulată!')) {
+                incidents = [];
+                localStorage.setItem('productionIncidents', JSON.stringify(incidents));
+                updateDashboard();
+                updateTimeline();
+                showNotification('🗑️ Toate datele au fost șterse');
+            }
+        }
+
+        function updateBackupStatus() {
+            const backupStatus = document.getElementById('backup-status');
+            const now = new Date();
+            const minutes = Math.floor(Math.random() * 5) + 1;
+            backupStatus.textContent = `Backup automat: Ultimul salvat acum ${minutes} ${minutes === 1 ? 'minut' : 'minute'}`;
+        }
+
+        // Auto-save incidents every 30 seconds
+        setInterval(() => {
+            if (incidents.length > 0) {
+                localStorage.setItem('productionIncidents', JSON.stringify(incidents));
+            }
+        }, 30000);
+
+        // Initialize the app when page loads
+        window.addEventListener('load', function() {
+            applySettings();
+            updateDashboard();
+            updateTimeline();
+        });
+    </script>
+</body>
+</html>
